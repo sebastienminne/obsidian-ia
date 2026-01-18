@@ -144,8 +144,8 @@ export default class OllamaTaggerPlugin extends Plugin {
 
         try {
             const allTags = (this.app.metadataCache as any).getTags();
-            const existingTags = Object.keys(allTags);
-            const suggestedTags = await this.llmProvider.generateTags(content, existingTags, this.settings.tagSuggestionPrompt);
+            // Pass the entire record { '#tag': count } to the provider
+            const suggestedTags = await this.llmProvider.generateTags(content, allTags, this.settings.tagSuggestionPrompt);
             new TagSuggestionModal(this.app, suggestedTags, (selectedTags) => {
                 this.addTagsToNote(view, selectedTags);
             }).open();

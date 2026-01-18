@@ -15,7 +15,7 @@ export class OllamaService implements LLMProvider {
         this.model = model;
     }
 
-    async generateTags(content: string, existingTags?: string[], promptTemplate?: string): Promise<string[]> {
+    async generateTags(content: string, existingTags?: Record<string, number>, promptTemplate?: string): Promise<string[]> {
         let systemPrompt = promptTemplate || `
 You are a helpful assistant that suggests tags for Obsidian notes.
 Read the following note content and suggest 5-10 relevant tags.
@@ -25,10 +25,20 @@ Do NOT return any conversational text.
 Example output: productivity, obsidian, coding, javascript
 `;
 
-        if (existingTags && existingTags.length > 0) {
+        if (existingTags && Object.keys(existingTags).length > 0) {
+            // Sort tags by count (descending)
+            const sortedTags = Object.entries(existingTags)
+                .sort(([, countA], [, countB]) => countB - countA)
+                .slice(0, 50) // Limit to top 50 to avoid huge prompts
+                .map(([tag, count]) => `- ${tag} (${count} uses)`);
+
             systemPrompt += `
-Here is a list of existing tags in the vault. PREFER using these tags if they are relevant, but you can create new ones if necessary:
-${existingTags.join(', ')}
+Here is a list of existing tags in the vault (with usage counts).
+PRIORITIZE using these existing tags, especially those with high usage counts, if they are relevant.
+Create new tags only if absolutely necessary.
+
+Existing Tags (Top 50):
+${sortedTags.join('\n')}
 `;
         }
 
