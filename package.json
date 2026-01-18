@@ -16,7 +16,7 @@
     "ai",
     "tags"
   ],
-  "author": "Antigravity",
+  "author": "Sébastien Minne",
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^30.0.0",

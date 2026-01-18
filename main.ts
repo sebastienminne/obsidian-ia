@@ -28,7 +28,7 @@ export default class OllamaTaggerPlugin extends Plugin {
 
         // This creates an icon in the left ribbon.
         // This creates an icon in the left ribbon.
-        const ribbonIconEl = this.addRibbonIcon('tag', 'Ollama Actions', (evt: MouseEvent) => {
+        const ribbonIconEl = this.addRibbonIcon('bot', 'Local LLM Actions', (evt: MouseEvent) => {
             const menu = new Menu();
 
             menu.addItem((item) =>
@@ -66,13 +66,13 @@ export default class OllamaTaggerPlugin extends Plugin {
             }
         });
 
-        console.log("Ollama Tagger: Plugin Loaded");
-        new Notice("Ollama Tagger v1.1.0 Loaded");
+        console.log("Local LLM: Plugin Loaded");
+        new Notice("Local LLM v1.1.0 Loaded");
 
         // Add context menu item for correction
         this.registerEvent(
             this.app.workspace.on("editor-menu", (menu, editor, view) => {
-                console.log("Ollama Tagger: Editor menu triggered");
+                console.log("Local LLM: Editor menu triggered");
                 menu.addItem((item) => {
                     item
                         .setTitle("Corriger")
@@ -191,7 +191,7 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
 
         containerEl.empty();
 
-        containerEl.createEl('h2', { text: 'Tag Suggester Settings' });
+        containerEl.createEl('h2', { text: 'Local LLM Settings' });
 
         new Setting(containerEl)
             .setName('Ollama URL')

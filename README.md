@@ -1,4 +1,4 @@
-# Obsidian Ollama Tag Suggester
+# Local LLM (Obsidian Plugin)
 
 This plugin uses a local Ollama instance to analyze your notes and suggest relevant tags.
 

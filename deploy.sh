@@ -5,7 +5,7 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}Starting deployment of Obsidian Tag Suggester...${NC}"
+echo -e "${GREEN}Starting deployment of Local LLM...${NC}"
 
 # 1. Build the plugin
 echo "Building plugin..."
