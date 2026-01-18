@@ -38,22 +38,6 @@ Since this plugin is not yet in the community store, you need to install it manu
 4. **Apple Intelligence Settings**:
     - **Shortcut Name**: The name of the macOS Shortcut to run (default: "Suggest Tags").
 
-## Apple Intelligence / Shortcuts Setup
-To use the Apple Intelligence provider, you need to create a **Shortcut** on your Mac:
-1. Open the **Shortcuts** app.
-2. Create a new shortcut named **"Suggest Tags"**.
-3. **Input**: Configure it to "Receive **Text** from **Quick Actions**" (or just ensure it accepts text input).
-4. **Actions**:
-    - Add an action to send the text to an AI model (e.g., "Ask ChatGPT", "Ask Siri", or a custom script).
-    - **Important**: The shortcut MUST output a **JSON Array** of strings (e.g., `["tag1", "tag2"]`).
-5. **Output**: Ensure the shortcut outputs the result.
-
-**Why Shortcuts?**
-Apple does not currently provide a direct API for third-party plugins to access "Apple Intelligence" writing tools. By using Shortcuts, you can bridge this gap and use any AI tool available in your Shortcuts library.
-
-## Docker Support
-**Note**: You cannot run the Apple Intelligence provider inside a Docker container because it requires access to the macOS host system to run Shortcuts. This feature only works when Obsidian is running natively on macOS.
-
 ## Usage
 1. Open a note in Obsidian.
 2. Click the **Tag Icon** in the left ribbon OR run the command **"Suggest Tags with Ollama"** (Cmd/Ctrl + P).
@@ -64,4 +48,11 @@ Apple does not currently provide a direct API for third-party plugins to access 
 
 ## Troubleshooting
 - **"Error calling Ollama"**: Ensure Ollama is running (`ollama serve`) and the URL in settings is correct.
-- **"Ollama response was not an array"**: The model might be hallucinating. Try a different model or check the console (Cmd+Opt+I) for the raw response.
+- **"Ollama response was not an array"**: The model might be hallucinating. Try a different model or check the console for the raw response.
+
+### Viewing Plugin Logs
+To debug issues or see what the plugin is doing behind the scenes:
+1. Open Obsidian.
+2. Press `Cmd + Option + I` (macOS) or `Ctrl + Shift + I` (Windows/Linux) to open the **Developer Tools**.
+3. Go to the **Console** tab.
+4. Look for messages starting with `Ollama Tagger` or errors in red.
