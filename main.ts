@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Menu, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { LLMProvider } from './llm_provider';
 import { OllamaService } from './ollama_service';
 import { TagSuggestionModal } from './ui';
@@ -27,8 +27,34 @@ export default class OllamaTaggerPlugin extends Plugin {
         this.initializeProvider();
 
         // This creates an icon in the left ribbon.
-        const ribbonIconEl = this.addRibbonIcon('tag', 'Suggest Tags', (evt: MouseEvent) => {
-            this.suggestTags();
+        // This creates an icon in the left ribbon.
+        const ribbonIconEl = this.addRibbonIcon('tag', 'Ollama Actions', (evt: MouseEvent) => {
+            const menu = new Menu();
+
+            menu.addItem((item) =>
+                item
+                    .setTitle('Suggest Tags')
+                    .setIcon('tag')
+                    .onClick(() => {
+                        this.suggestTags();
+                    })
+            );
+
+            menu.addItem((item) =>
+                item
+                    .setTitle('Correct Text')
+                    .setIcon('check-circle')
+                    .onClick(() => {
+                        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+                        if (view) {
+                            this.handleCorrection(view.editor);
+                        } else {
+                            new Notice("No active editor");
+                        }
+                    })
+            );
+
+            menu.showAtMouseEvent(evt);
         });
 
         // This adds a simple command that can be triggered anywhere
