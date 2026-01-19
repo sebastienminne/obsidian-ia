@@ -1,15 +1,15 @@
 import { App, Modal, Setting } from 'obsidian';
 
 export class TagSuggestionModal extends Modal {
-    private suggestions: string[];
+    private suggestions: any[]; // Using any to avoid importing SuggestedTag here if lazy, but better to import
     private onSubmit: (selectedTags: string[]) => void;
     private selectedTags: Set<string>;
 
-    constructor(app: App, suggestions: string[], onSubmit: (selectedTags: string[]) => void) {
+    constructor(app: App, suggestions: any[], onSubmit: (selectedTags: string[]) => void) {
         super(app);
         this.suggestions = suggestions;
         this.onSubmit = onSubmit;
-        this.selectedTags = new Set(suggestions); // Default to all selected
+        this.selectedTags = new Set(suggestions.map(s => s.tag)); // Default to all selected
     }
 
     onOpen() {
@@ -18,25 +18,24 @@ export class TagSuggestionModal extends Modal {
         contentEl.createEl('h2', { text: 'Suggested Tags' });
 
         const tagsContainer = contentEl.createDiv({ cls: 'tag-suggestions-container' });
-        // Add some basic styling
         tagsContainer.style.display = 'flex';
         tagsContainer.style.flexDirection = 'column';
         tagsContainer.style.gap = '10px';
         tagsContainer.style.marginBottom = '20px';
 
-        this.suggestions.forEach(tag => {
-            new Setting(tagsContainer)
-                .setName(tag)
-                .addToggle(toggle => toggle
-                    .setValue(true)
-                    .onChange(value => {
-                        if (value) {
-                            this.selectedTags.add(tag);
-                        } else {
-                            this.selectedTags.delete(tag);
-                        }
-                    }));
-        });
+        // Group suggestions
+        const existingTags = this.suggestions.filter(s => s.type === 'existing');
+        const newTags = this.suggestions.filter(s => s.type === 'new');
+
+        if (existingTags.length > 0) {
+            tagsContainer.createEl('h3', { text: 'Existing Tags', cls: 'tag-group-header' });
+            this.createTagList(tagsContainer, existingTags);
+        }
+
+        if (newTags.length > 0) {
+            tagsContainer.createEl('h3', { text: 'New Tags', cls: 'tag-group-header' });
+            this.createTagList(tagsContainer, newTags);
+        }
 
         new Setting(contentEl)
             .addButton(btn => btn
@@ -46,6 +45,26 @@ export class TagSuggestionModal extends Modal {
                     this.close();
                     this.onSubmit(Array.from(this.selectedTags));
                 }));
+    }
+
+    createTagList(container: HTMLElement, tags: any[]) {
+        tags.forEach(item => {
+            const setting = new Setting(container)
+                .setName(item.tag)
+                .setDesc(item.justification) // Shows description in small text
+                .addToggle(toggle => toggle
+                    .setValue(true)
+                    .onChange(value => {
+                        if (value) {
+                            this.selectedTags.add(item.tag);
+                        } else {
+                            this.selectedTags.delete(item.tag);
+                        }
+                    }));
+
+            // Add tooltip for better visibility if needed
+            setting.settingEl.title = item.justification;
+        });
     }
 
     onClose() {

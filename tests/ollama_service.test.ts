@@ -16,23 +16,31 @@ describe('OllamaService', () => {
     });
 
     describe('generateTags', () => {
-        it('should correctly parse comma-separated tags', async () => {
+        it('should correctly parse JSON array of tags', async () => {
             (requestUrl as jest.Mock).mockResolvedValue({
                 status: 200,
                 json: {
-                    response: 'tag1, tag2, tag3'
+                    message: {
+                        content: JSON.stringify([
+                            { tag: 'tag1', type: 'existing', justification: 'reason 1' },
+                            { tag: 'tag2', type: 'new', justification: 'reason 2' }
+                        ])
+                    }
                 }
             });
 
             const tags = await service.generateTags('some content', { '#tag1': 10 });
-            expect(tags).toEqual(['tag1', 'tag2', 'tag3']);
+            expect(tags).toHaveLength(2);
+            expect(tags[0].tag).toBe('tag1');
+            expect(tags[0].type).toBe('existing');
+            expect(tags[1].type).toBe('new');
         });
 
         it('should format tags with counts in prompt', async () => {
             (requestUrl as jest.Mock).mockResolvedValue({
                 status: 200,
                 json: {
-                    response: 'tag1'
+                    message: { content: JSON.stringify([{ tag: 'tag1', type: 'existing' }]) }
                 }
             });
 
@@ -44,34 +52,74 @@ describe('OllamaService', () => {
             await service.generateTags('some content', existingTags);
 
             const calls = (requestUrl as jest.Mock).mock.calls;
+            const url = calls[0][0].url;
+            expect(url).toContain('/api/chat');
+
             const requestBody = JSON.parse(calls[0][0].body);
-            expect(requestBody.prompt).toContain('- #popular (100 uses)');
-            expect(requestBody.prompt).toContain('- #rare (1 uses)');
+            const systemContent = requestBody.messages[0].content;
+            expect(systemContent).toContain('- #popular (100 uses)');
+            expect(systemContent).toContain('- #rare (1 uses)');
             // Implicitly checks sort order if we were parsing carefully, but containment is good enough for now
         });
 
-        it('should remove conversational prefixes', async () => {
+        it('should handle { tags: [...] } wrapper', async () => {
             (requestUrl as jest.Mock).mockResolvedValue({
                 status: 200,
                 json: {
-                    response: 'Here are the tags: tag1, tag2'
+                    message: {
+                        content: JSON.stringify({
+                            tags: [
+                                { tag: 'tag1', type: 'existing', justification: 'reason 1' }
+                            ]
+                        })
+                    }
                 }
             });
-
-            const tags = await service.generateTags('some content');
-            expect(tags).toEqual(['tag1', 'tag2']);
+            const tags = await service.generateTags('content');
+            expect(tags).toHaveLength(1);
+            expect(tags[0].tag).toBe('tag1');
         });
 
-        it('should handle newlines as separators', async () => {
+        it('should handle single object response (not array)', async () => {
             (requestUrl as jest.Mock).mockResolvedValue({
                 status: 200,
                 json: {
-                    response: 'tag1\ntag2\ntag3'
+                    message: {
+                        content: JSON.stringify({ tag: 'tag1', type: 'new', justification: 'reason' })
+                    }
                 }
             });
+            const tags = await service.generateTags('content');
+            expect(tags).toHaveLength(1);
+            expect(tags[0].tag).toBe('tag1');
+        });
 
+        it('should recover from malformed array (missing brackets)', async () => {
+            (requestUrl as jest.Mock).mockResolvedValue({
+                status: 200,
+                json: {
+                    message: {
+                        content: '{"tag": "tag1", "type": "existing"} {"tag": "tag2", "type": "new"}'
+                    }
+                }
+            });
+            const tags = await service.generateTags('content');
+            expect(tags).toHaveLength(2);
+            expect(tags[0].tag).toBe('tag1');
+            expect(tags[1].tag).toBe('tag2');
+        });
+
+        it('should handle invalid JSON gracefully', async () => {
+            (requestUrl as jest.Mock).mockResolvedValue({
+                status: 200,
+                json: {
+                    message: { content: 'Not JSON' }
+                }
+            });
+            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
             const tags = await service.generateTags('some content');
-            expect(tags).toEqual(['tag1', 'tag2', 'tag3']);
+            expect(tags).toEqual([]);
+            consoleSpy.mockRestore();
         });
     });
 

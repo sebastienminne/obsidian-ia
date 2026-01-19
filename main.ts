@@ -146,7 +146,7 @@ export default class OllamaTaggerPlugin extends Plugin {
             const allTags = (this.app.metadataCache as any).getTags();
             // Pass the entire record { '#tag': count } to the provider
             const suggestedTags = await this.llmProvider.generateTags(content, allTags, this.settings.tagSuggestionPrompt);
-            new TagSuggestionModal(this.app, suggestedTags, (selectedTags) => {
+            new TagSuggestionModal(this.app, suggestedTags as any[], (selectedTags) => {
                 this.addTagsToNote(view, selectedTags);
             }).open();
         } catch (error) {
@@ -204,16 +204,71 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        new Setting(containerEl)
+
+        // Better approach for Async Dropdown in Obsidian Settings:
+        const modelSetting = new Setting(containerEl)
             .setName('Model Name')
-            .setDesc('The name of the model to use (e.g., llama3, mistral)')
-            .addText(text => text
-                .setPlaceholder('llama3')
-                .setValue(this.plugin.settings.modelName)
-                .onChange(async (value) => {
+            .setDesc('Select the model to use.');
+
+        modelSetting.addDropdown(dropdown => {
+            dropdown.addOption('', 'Loading models...');
+            dropdown.setValue('');
+        });
+
+        // Load models asynchronously
+        (async () => {
+            let models: string[] = [];
+            try {
+                if (this.plugin.llmProvider && this.plugin.llmProvider.getModels) {
+                    models = await this.plugin.llmProvider.getModels();
+                }
+            } catch (e) {
+                console.error("Failed to load models in settings:", e);
+            }
+
+            // Sort models
+            models.sort();
+
+            const dropdownComponent = (modelSetting.components[0] as any);
+
+            // Clear options (select element)
+            if (dropdownComponent && dropdownComponent.selectEl) {
+                dropdownComponent.selectEl.innerHTML = ''; // Clear loading
+
+                if (models.length === 0) {
+                    const opt = dropdownComponent.selectEl.createEl('option');
+                    opt.text = "No models found (check URL)";
+                    opt.value = "";
+                    // Keep current value if possible, so user isn't stuck
+                    if (this.plugin.settings.modelName) {
+                        const currentOpt = dropdownComponent.selectEl.createEl('option');
+                        currentOpt.text = this.plugin.settings.modelName + " (current)";
+                        currentOpt.value = this.plugin.settings.modelName;
+                        dropdownComponent.setValue(this.plugin.settings.modelName);
+                    }
+                } else {
+                    models.forEach(m => {
+                        const opt = dropdownComponent.selectEl.createEl('option');
+                        opt.text = m;
+                        opt.value = m;
+                    });
+
+                    // Auto-select logic
+                    if (!this.plugin.settings.modelName && models.length === 1) {
+                        this.plugin.settings.modelName = models[0];
+                        await this.plugin.saveSettings();
+                    }
+
+                    // Ensure current setting is selected
+                    dropdownComponent.setValue(this.plugin.settings.modelName);
+                }
+
+                dropdownComponent.onChange(async (value: string) => {
                     this.plugin.settings.modelName = value;
                     await this.plugin.saveSettings();
-                }));
+                });
+            }
+        })();
 
         containerEl.createEl('h3', { text: 'Custom Prompts' });
 

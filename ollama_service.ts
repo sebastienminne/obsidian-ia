@@ -6,23 +6,37 @@ export class OllamaService implements LLMProvider {
     private model: string;
 
     constructor(url: string, model: string) {
-        this.url = url;
+        this.url = url.replace(/\/$/, '');
         this.model = model;
     }
 
     updateSettings(url: string, model: string) {
-        this.url = url;
+        this.url = url.replace(/\/$/, '');
         this.model = model;
     }
 
-    async generateTags(content: string, existingTags?: Record<string, number>, promptTemplate?: string): Promise<string[]> {
+    async generateTags(content: string, existingTags?: Record<string, number>, promptTemplate?: string): Promise<any[]> {
         let systemPrompt = promptTemplate || `
-You are a helpful assistant that suggests tags for Obsidian notes.
-Read the following note content and suggest 5-10 relevant tags.
-CRITICAL INSTRUCTION: Return ONLY a list of tags separated by commas.
-Do NOT use JSON.
-Do NOT return any conversational text.
-Example output: productivity, obsidian, coding, javascript
+You are an intelligent assistant that analyzes notes to suggest metadata.
+Generate a comprehensive list of at least 10 relevant tags for the provided Note Content.
+Include general themes, specific entities, and context.
+You MUST return the result as a JSON ARRAY of objects.
+Start your response with \`[\`.
+Do NOT output any conversational text.
+Do NOT wrap the result in an object (like {"tags": [...]}). Return the array directly: [...].
+Do NOT output markdown formatting (like \`\`\`json).
+Just the raw JSON array.
+
+Each object must have:
+- "tag": The tag name (lowercase, no spaces, kebab-case).
+- "type": Either "existing" (if it matches a provided tag) or "new".
+- "justification": A short explanation (max 10 words) of why this tag is relevant.
+
+Example output:
+[
+  { "tag": "productivity", "type": "existing", "justification": "Related to work efficiency" },
+  { "tag": "javascript", "type": "new", "justification": "Code snippet found" }
+]
 `;
 
         if (existingTags && Object.keys(existingTags).length > 0) {
@@ -34,30 +48,83 @@ Example output: productivity, obsidian, coding, javascript
 
             systemPrompt += `
 Here is a list of existing tags in the vault (with usage counts).
-PRIORITIZE using these existing tags, especially those with high usage counts, if they are relevant.
-Create new tags only if absolutely necessary.
+PRIORITIZE using these existing tags if they are relevant.
+Mark as "type": "existing" if you use one of these.
 
 Existing Tags (Top 50):
 ${sortedTags.join('\n')}
 `;
         }
 
-        const prompt = `
-${systemPrompt}
+        const messages = [
+            {
+                role: 'system',
+                content: systemPrompt
+            },
+            {
+                role: 'user',
+                content: `Analyze the following note structure and content.
+Identify key themes, entities, topics, and specific details.
+Brainstorm a comprehensive list of at least 10 tags.
 
 Note Content:
-${content.substring(0, 5000)} 
-`;
+# Meeting Minutes: Project Alpha
+Date: 2023-10-27
+Attendees: John, Sarah, Mike
+
+## Agenda
+1. Budget review
+2. Timeline delays
+3. Marketing strategy
+
+## Discussion
+- The budget is tight for Q4. We need to cut costs in the cloud infrastructure.
+- Deployment to AWS is delayed by 2 weeks due to testing failures.
+- Sarah proposed a new social media campaign on LinkedIn.`
+            },
+            {
+                role: 'assistant',
+                content: `[
+  { "tag": "project-alpha", "type": "new", "justification": "Project name identified" },
+  { "tag": "meeting-minutes", "type": "new", "justification": "Note type inferred" },
+  { "tag": "budget", "type": "existing", "justification": "Key topic discussed" },
+  { "tag": "finance", "type": "existing", "justification": "Related to budget discussion" },
+  { "tag": "aws", "type": "new", "justification": "Specific cloud provider mentioned" },
+  { "tag": "infrastructure", "type": "existing", "justification": "Context of cost cutting" },
+  { "tag": "marketing", "type": "existing", "justification": "Strategy topic discussed" },
+  { "tag": "social-media", "type": "new", "justification": "Campaign channel proposed" },
+  { "tag": "linkedin", "type": "new", "justification": "Specific platform entity" },
+  { "tag": "deployment", "type": "existing", "justification": "Process regarding delays" },
+  { "tag": "testing", "type": "existing", "justification": "Cause of delay identified" },
+  { "tag": "planning", "type": "existing", "justification": "General meeting context" }
+]`
+            },
+            {
+                role: 'user',
+                content: `Analyze the following note structure and content.
+Identify key themes, entities, topics, and specific details.
+Brainstorm a comprehensive list of at least 10 tags.
+
+Note Content:
+${content.substring(0, 5000)}`
+            }
+        ];
 
         const requestBody = {
             model: this.model,
-            prompt: prompt,
-            stream: false
+            messages: messages,
+            stream: false,
+            // format: "json", // Removed to prevent single-object truncation
+            options: {
+                temperature: 0.7 // Higher creativity for brainstorming
+            }
         };
+
+        console.log("Ollama Request Messages:", JSON.stringify(messages, null, 2));
 
         try {
             const response = await requestUrl({
-                url: `${this.url}/api/generate`,
+                url: `${this.url}/api/chat`,
                 method: 'POST',
                 body: JSON.stringify(requestBody),
                 headers: {
@@ -70,58 +137,118 @@ ${content.substring(0, 5000)}
             }
 
             const data = response.json;
-            let responseText = data.response.trim();
+            // Chat response is in data.message.content
+            let responseText = data.message?.content?.trim();
 
-            console.log("Raw Ollama Response:", responseText);
+            if (!responseText) {
+                // Fallback if structure is different
+                responseText = data.response?.trim(); // Some versions might differ?
+            }
 
-            // Clean up response: remove any "Here are the tags:" prefixes if they exist
-            // We assume the model might still be chatty, so we look for the last line or just try to split.
+            if (!responseText) {
+                console.error("Empty response from Ollama");
+                return [];
+            }
 
-            // Strategy: Split by comma or newline
-            // Remove common conversational prefixes
-            responseText = responseText.replace(/^[\s\S]*:/, ''); // Remove "Here are tags:"
+            // Clean up: find the first '[' or '{'
+            const firstBracket = responseText.indexOf('[');
+            const firstBrace = responseText.indexOf('{');
 
-            const tags = responseText.split(/[,|\n]/)
-                .map((t: string) => t.trim())
-                .filter((t: string) => t.length > 0)
-                .filter((t: string) => !t.startsWith('-')) // Remove bullet points if model used list format
-                .map((t: string) => t.replace(/^["']|["']$/g, '')) // Remove quotes
-                .map((t: string) => t.toLowerCase().replace(/\s+/g, '-')); // Normalize
+            let parsed: any;
 
-            // Filter out obviously bad tags (too long, or sentences)
-            const validTags = tags.filter((t: string) => t.length < 50 && !t.includes(' '));
+            // Case 1: It looks like an array
+            if (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
+                const end = responseText.lastIndexOf(']');
+                if (end !== -1) {
+                    const jsonStr = responseText.substring(firstBracket, end + 1);
+                    try {
+                        parsed = JSON.parse(jsonStr);
+                    } catch (e) {
+                        console.error("Failed to parse JSON array, trying fix", e);
+                    }
+                }
+            }
 
-            return validTags;
+            // Case 2: It looks like a single object or multiple objects not in array
+            if (!parsed && firstBrace !== -1) {
+                const end = responseText.lastIndexOf('}');
+                if (end !== -1) {
+                    let jsonStr = responseText.substring(firstBrace, end + 1);
+                    // Try parsing as single object
+                    try {
+                        const obj = JSON.parse(jsonStr);
+                        parsed = obj;
+                    } catch (e) {
+                        // Maybe it's multiple objects like {...} {...}
+                        // Try to comma separate them and wrap in []
+                        const fixedStr = `[${jsonStr.replace(/}\s*{/g, '},{')}]`;
+                        try {
+                            parsed = JSON.parse(fixedStr);
+                        } catch (e2) {
+                            console.error("Failed to parse fixed JSON objects", e2);
+                        }
+                    }
+                }
+            }
+
+            if (!parsed) {
+                console.error("No valid JSON found in response");
+                return [];
+            }
+
+            // Handle { "tags": [...] } wrapper
+            if (!Array.isArray(parsed) && parsed.tags && Array.isArray(parsed.tags)) {
+                parsed = parsed.tags;
+            }
+
+            if (!Array.isArray(parsed)) {
+                parsed = [parsed];
+            }
+
+            // Validate structure
+            return parsed.map((item: any) => ({
+                tag: item.tag?.toLowerCase().replace(/\s+/g, '-').replace(/^#/, '') || 'unknown',
+                type: item.type === 'existing' ? 'existing' : 'new',
+                justification: item.justification || 'No justification provided'
+            })).filter((t: any) => t.tag !== 'unknown');
 
         } catch (error) {
             console.error("Error calling Ollama:", error);
+            if (error.message && error.message.includes('404')) {
+                throw new Error(`Ollama Model '${this.model}' not found (404). Check your settings.`);
+            }
             throw error;
         }
     }
 
     async correctText(content: string, promptTemplate?: string): Promise<string> {
-        const prompt = (promptTemplate || `
+        const messages = [
+            {
+                role: 'system',
+                content: promptTemplate || `
 You are a helpful assistant that corrects spelling and grammar.
 Read the following text and correct any spelling or grammatical errors.
 CRITICAL INSTRUCTION: Return ONLY the corrected text.
 Do NOT change the meaning of the text.
 Do NOT add any conversational text (like "Here is the corrected text").
 Do NOT add quotes around the output unless they were in the original text.
-`) + `
-
-Text to correct:
-${content}
-`;
+`
+            },
+            {
+                role: 'user',
+                content: `Text to correct:\n${content}`
+            }
+        ];
 
         const requestBody = {
             model: this.model,
-            prompt: prompt,
+            messages: messages,
             stream: false
         };
 
         try {
             const response = await requestUrl({
-                url: `${this.url}/api/generate`,
+                url: `${this.url}/api/chat`,
                 method: 'POST',
                 body: JSON.stringify(requestBody),
                 headers: {
@@ -134,22 +261,55 @@ ${content}
             }
 
             const data = response.json;
-            let responseText = data.response.trim();
+            let responseText = data.message?.content?.trim();
 
-            // Clean up response if model is chatty
-            responseText = responseText.replace(/^[\s\S]*:/, ''); // Remove "Here is corrected text:"
-            responseText = responseText.trim();
-
-            // Remove wrapping quotes if the model added them but they weren't in original
-            if (responseText.startsWith('"') && responseText.endsWith('"') && !content.trim().startsWith('"')) {
-                responseText = responseText.slice(1, -1);
+            if (!responseText) {
+                responseText = data.response?.trim();
             }
 
-            return responseText;
+            // Clean up response if model is chatty
+            if (responseText) {
+                responseText = responseText.replace(/^[\s\S]*:/, ''); // Remove "Here is corrected text:"
+                responseText = responseText.trim();
+
+                // Remove wrapping quotes if the model added them but they weren't in original
+                if (responseText.startsWith('"') && responseText.endsWith('"') && !content.trim().startsWith('"')) {
+                    responseText = responseText.slice(1, -1);
+                }
+            }
+
+            return responseText || content; // Return original if fail
 
         } catch (error) {
             console.error("Error calling Ollama for correction:", error);
+            if (error.message && error.message.includes('404')) {
+                throw new Error(`Ollama Model '${this.model}' not found (404). Check your settings.`);
+            }
             throw error;
+        }
+    }
+
+    async getModels(): Promise<string[]> {
+        try {
+            const response = await requestUrl({
+                url: `${this.url}/api/tags`,
+                method: 'GET'
+            });
+
+            if (response.status !== 200) {
+                console.error("Failed to fetch models, status:", response.status);
+                return [];
+            }
+
+            // Ollama returns { models: [ { name: "llama3:latest", ... }, ... ] }
+            const data = response.json;
+            if (data && Array.isArray(data.models)) {
+                return data.models.map((m: any) => m.name);
+            }
+            return [];
+        } catch (error) {
+            console.error("Error fetching models:", error);
+            return [];
         }
     }
 }
