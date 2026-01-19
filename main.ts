@@ -272,9 +272,15 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
             }
         })();
 
-        containerEl.createEl('h3', { text: 'Custom Prompts' });
+        const detailsEl = containerEl.createEl('details');
+        detailsEl.createEl('summary', { text: 'Fine Tuning' });
+        // Add some style to make it look decent
+        detailsEl.style.marginTop = '20px';
+        detailsEl.style.border = '1px solid var(--background-modifier-border)';
+        detailsEl.style.padding = '10px';
+        detailsEl.style.borderRadius = '4px';
 
-        new Setting(containerEl)
+        new Setting(detailsEl)
             .setName('Creativity (Temperature)')
             .setDesc('Adjust how creative or precise the model should be. Lower values are more deterministic, higher values are more creative/random.')
             .addSlider(slider => slider
@@ -287,7 +293,7 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
                     this.plugin.initializeProvider();
                 }));
 
-        new Setting(containerEl)
+        new Setting(detailsEl)
             .setName('Tag Suggestion Prompt')
             .setDesc('Custom system prompt for tag generation. Leave empty to use default.')
             .addTextArea(text => text
@@ -298,7 +304,7 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        new Setting(containerEl)
+        new Setting(detailsEl)
             .setName('Spell Correction Prompt')
             .setDesc('Custom system prompt for text correction. Leave empty to use default.')
             .addTextArea(text => text
