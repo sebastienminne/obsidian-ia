@@ -8,13 +8,15 @@ interface OllamaTaggerSettings {
     modelName: string;
     tagSuggestionPrompt: string;
     spellCorrectionPrompt: string;
+    creativity: number;
 }
 
 const DEFAULT_SETTINGS: OllamaTaggerSettings = {
     ollamaUrl: 'http://localhost:11434',
     modelName: 'llama3',
     tagSuggestionPrompt: '',
-    spellCorrectionPrompt: ''
+    spellCorrectionPrompt: '',
+    creativity: 0.7
 }
 
 export default class OllamaTaggerPlugin extends Plugin {
@@ -271,6 +273,19 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
         })();
 
         containerEl.createEl('h3', { text: 'Custom Prompts' });
+
+        new Setting(containerEl)
+            .setName('Creativity (Temperature)')
+            .setDesc('Adjust how creative or precise the model should be. Lower values are more deterministic, higher values are more creative/random.')
+            .addSlider(slider => slider
+                .setLimits(0, 1, 0.1)
+                .setValue(this.plugin.settings.creativity)
+                .setDynamicTooltip()
+                .onChange(async (value) => {
+                    this.plugin.settings.creativity = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.initializeProvider();
+                }));
 
         new Setting(containerEl)
             .setName('Tag Suggestion Prompt')

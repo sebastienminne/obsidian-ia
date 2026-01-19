@@ -4,15 +4,20 @@ import { LLMProvider } from './llm_provider';
 export class OllamaService implements LLMProvider {
     private url: string;
     private model: string;
+    private temperature: number;
 
-    constructor(url: string, model: string) {
+    constructor(url: string, model: string, temperature: number = 0.7) {
         this.url = url.replace(/\/$/, '');
         this.model = model;
+        this.temperature = temperature;
     }
 
-    updateSettings(url: string, model: string) {
+    updateSettings(url: string, model: string, temperature?: number) {
         this.url = url.replace(/\/$/, '');
         this.model = model;
+        if (temperature !== undefined) {
+            this.temperature = temperature;
+        }
     }
 
     async generateTags(content: string, existingTags?: Record<string, number>, promptTemplate?: string): Promise<any[]> {
@@ -114,9 +119,8 @@ ${content.substring(0, 5000)}`
             model: this.model,
             messages: messages,
             stream: false,
-            // format: "json", // Removed to prevent single-object truncation
             options: {
-                temperature: 0.7 // Higher creativity for brainstorming
+                temperature: this.temperature
             }
         };
 
