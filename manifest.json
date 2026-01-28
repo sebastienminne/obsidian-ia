@@ -1,10 +1,10 @@
 {
-	"id": "obsidian-ollama-tagger",
-	"name": "Local LLM",
-	"version": "2.0.0",
-	"minAppVersion": "0.15.0",
-	"description": "Suggests tags for your notes using a local Ollama instance.",
-	"author": "Sébastien Minne",
-	"authorUrl": "https://github.com/sebastienminne/obsidian-ia",
-	"isDesktopOnly": true
+    "id": "obsidian-ollama-tagger",
+    "name": "Local LLM",
+    "version": "2.0.0",
+    "minAppVersion": "0.15.0",
+    "description": "Your private AI assistant. Generate meeting minutes, get smart context-aware tag suggestions, and correct text—all running locally via Ollama.",
+    "author": "Sébastien Minne",
+    "authorUrl": "https://github.com/sebastienminne/obsidian-ia",
+    "isDesktopOnly": true
 }
