@@ -62,6 +62,24 @@ describe('OllamaService', () => {
             // Implicitly checks sort order if we were parsing carefully, but containment is good enough for now
         });
 
+        it('should include language instruction in system prompt', async () => {
+            (requestUrl as jest.Mock).mockResolvedValue({
+                status: 200,
+                json: {
+                    message: { content: JSON.stringify([{ tag: 'test', type: 'new' }]) }
+                }
+            });
+
+            await service.generateTags('some content');
+
+            const calls = (requestUrl as jest.Mock).mock.calls;
+            const requestBody = JSON.parse(calls[0][0].body);
+            const systemContent = requestBody.messages[0].content;
+
+            expect(systemContent).toContain('IMPORTANT: Detect the language of the note content.');
+            expect(systemContent).toContain('Generate tags in the SAME language as the note content');
+        });
+
         it('should handle { tags: [...] } wrapper', async () => {
             (requestUrl as jest.Mock).mockResolvedValue({
                 status: 200,

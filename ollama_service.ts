@@ -32,6 +32,8 @@ Do NOT wrap the result in an object (like {"tags": [...]}). Return the array dir
 Do NOT output markdown formatting (like \`\`\`json).
 Just the raw JSON array.
 
+IMPORTANT: Detect the language of the note content. Generate tags in the SAME language as the note content, unless the tag is a technical term standardly used in English.
+
 Each object must have:
 - "tag": The tag name (lowercase, no spaces, kebab-case).
 - "type": Either "existing" (if it matches a provided tag) or "new".
