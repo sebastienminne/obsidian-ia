@@ -1,6 +1,6 @@
 {
   "name": "obsidian-ollama-tagger",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Suggests tags for your notes using a local Ollama instance.",
   "main": "main.js",
   "scripts": {
