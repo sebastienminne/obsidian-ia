@@ -1,4 +1,4 @@
-import { App, Modal, Setting } from 'obsidian';
+import { App, Modal, Setting, Notice } from 'obsidian';
 
 export class TagSuggestionModal extends Modal {
     private suggestions: any[]; // Using any to avoid importing SuggestedTag here if lazy, but better to import
@@ -64,6 +64,61 @@ export class TagSuggestionModal extends Modal {
 
             // Add tooltip for better visibility if needed
             setting.settingEl.title = item.justification;
+        });
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+    }
+}
+
+export class SummaryModal extends Modal {
+    private summary: string;
+    private onAddToNote: () => void; // Callback for adding to note
+
+    constructor(app: App, summary: string, onAddToNote: () => void) {
+        super(app);
+        this.summary = summary;
+        this.onAddToNote = onAddToNote;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.createEl('h2', { text: 'Meeting Minutes Summary' });
+
+        const summaryContainer = contentEl.createDiv({ cls: 'summary-container' });
+        summaryContainer.style.marginBottom = '20px';
+        summaryContainer.style.whiteSpace = 'pre-wrap';
+        summaryContainer.style.userSelect = 'text';
+        summaryContainer.createEl('p', { text: this.summary });
+
+        const buttonContainer = contentEl.createDiv({ cls: 'summary-buttons' });
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.justifyContent = 'flex-end'; // Right align
+        buttonContainer.style.gap = '10px'; // Space between buttons
+        buttonContainer.style.marginTop = '20px';
+
+        // Add to Note Button
+        const addToNoteBtn = buttonContainer.createEl('button', { text: 'Add to Note Header' });
+        addToNoteBtn.addEventListener('click', () => {
+            this.onAddToNote();
+            this.close();
+        });
+
+        // Copy Button
+        const copyBtn = buttonContainer.createEl('button', { text: 'Copy to Clipboard' });
+        copyBtn.classList.add('mod-cta'); // Make it primary
+        copyBtn.addEventListener('click', async () => {
+            await navigator.clipboard.writeText(this.summary);
+            new Notice('Summary copied to clipboard!');
+            this.close();
+        });
+
+        // Close Button
+        const closeBtn = buttonContainer.createEl('button', { text: 'Close' });
+        closeBtn.addEventListener('click', () => {
+            this.close();
         });
     }
 

@@ -1,13 +1,15 @@
 import { App, Editor, MarkdownView, Menu, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { LLMProvider } from './llm_provider';
 import { OllamaService } from './ollama_service';
-import { TagSuggestionModal } from './ui';
+import { TagSuggestionModal, SummaryModal } from './ui';
+import { insertMeetingMinutes } from './text_utils';
 
 interface OllamaTaggerSettings {
     ollamaUrl: string;
     modelName: string;
     tagSuggestionPrompt: string;
     spellCorrectionPrompt: string;
+    meetingMinutesPrompt: string;
     creativity: number;
 }
 
@@ -16,6 +18,7 @@ const DEFAULT_SETTINGS: OllamaTaggerSettings = {
     modelName: 'llama3',
     tagSuggestionPrompt: '',
     spellCorrectionPrompt: '',
+    meetingMinutesPrompt: '',
     creativity: 0.7
 }
 
@@ -56,6 +59,20 @@ export default class OllamaTaggerPlugin extends Plugin {
                     })
             );
 
+            menu.addItem((item) =>
+                item
+                    .setTitle('Generate Meeting Minutes')
+                    .setIcon('file-text')
+                    .onClick(() => {
+                        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+                        if (view) {
+                            this.generateMeetingMinutes(view.editor, view);
+                        } else {
+                            new Notice("No active editor");
+                        }
+                    })
+            );
+
             menu.showAtMouseEvent(evt);
         });
 
@@ -83,6 +100,16 @@ export default class OllamaTaggerPlugin extends Plugin {
                             this.handleCorrection(editor);
                         });
                 });
+                menu.addItem((item) => {
+                    item
+                        .setTitle("Generate Meeting Minutes")
+                        .setIcon("file-text")
+                        .onClick(async () => {
+                            if (view instanceof MarkdownView) {
+                                this.generateMeetingMinutes(editor, view);
+                            }
+                        });
+                });
             })
         );
 
@@ -91,6 +118,14 @@ export default class OllamaTaggerPlugin extends Plugin {
             name: 'Correct Selected Text',
             editorCallback: (editor: Editor, view: MarkdownView) => {
                 this.handleCorrection(editor);
+            }
+        });
+
+        this.addCommand({
+            id: 'generate-meeting-minutes',
+            name: 'Generate Meeting Minutes',
+            editorCallback: (editor: Editor, view: MarkdownView) => {
+                this.generateMeetingMinutes(editor, view);
             }
         });
         // This adds a settings tab so the user can configure various aspects of the plugin
@@ -155,6 +190,37 @@ export default class OllamaTaggerPlugin extends Plugin {
             new Notice('Error generating tags: ' + error.message);
             console.error(error);
         }
+    }
+
+    async generateMeetingMinutes(editor: Editor, view: MarkdownView) {
+        if (!view) {
+            new Notice('No active Markdown view');
+            return;
+        }
+
+        const content = view.getViewData();
+        new Notice(`Generating meeting minutes...`);
+
+        try {
+            const summary = await this.llmProvider.generateSummary(content, this.settings.meetingMinutesPrompt);
+            if (summary) {
+                new SummaryModal(this.app, summary, () => {
+                    this.handleAddToNote(view, summary);
+                }).open();
+            } else {
+                new Notice("Failed to generate summary.");
+            }
+        } catch (error) {
+            new Notice('Error generating summary: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    handleAddToNote(view: MarkdownView, summary: string) {
+        const currentContent = view.getViewData();
+        const newContent = insertMeetingMinutes(currentContent, summary);
+        view.setViewData(newContent, false);
+        new Notice("Meeting minutes added to note!");
     }
 
     addTagsToNote(view: MarkdownView, tags: string[]) {
@@ -312,6 +378,17 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.spellCorrectionPrompt)
                 .onChange(async (value) => {
                     this.plugin.settings.spellCorrectionPrompt = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(detailsEl)
+            .setName('Meeting Minutes Prompt')
+            .setDesc('Custom system prompt for meeting minutes generation.')
+            .addTextArea(text => text
+                .setPlaceholder('Default prompt will be used if empty...')
+                .setValue(this.plugin.settings.meetingMinutesPrompt)
+                .onChange(async (value) => {
+                    this.plugin.settings.meetingMinutesPrompt = value;
                     await this.plugin.saveSettings();
                 }));
     }

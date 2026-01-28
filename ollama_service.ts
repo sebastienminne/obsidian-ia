@@ -293,6 +293,78 @@ Do NOT add quotes around the output unless they were in the original text.
         }
     }
 
+    async generateSummary(content: string, promptTemplate?: string): Promise<string> {
+        const messages = [
+            {
+                role: 'system',
+                content: promptTemplate || `
+You are an expert meeting secretary.
+Your task is to generate a succinct meeting minutes summary from the provided note content.
+STRICT INSTRUCTIONS:
+1.  **Language**: The summary MUST be in the SAME LANGUAGE as the note content.
+2.  **No Hallucinations**: Do NOT invent any facts. Stick STRICTLY to the provided content.
+3.  **Format**:
+    *   **Date**: (If found)
+    *   **Attendees**: (If found)
+    *   **Key Topics**: (List the main concepts)
+    *   **Decisions/Action Items**: (If any)
+4.  **No Tags**: Do NOT include hashtags.
+5.  **Conciseness**: Keep it brief and to the point.
+6.  Do NOT add conversational filler (like "Here is the summary"). Just the summary.
+`
+            },
+            {
+                role: 'user',
+                content: `Generate a meeting minutes summary for the following note content:\n\n${content}`
+            }
+        ];
+
+        const requestBody = {
+            model: this.model,
+            messages: messages,
+            stream: false,
+            options: {
+                temperature: this.temperature // Allow some creativity for summarization
+            }
+        };
+
+        try {
+            const response = await requestUrl({
+                url: `${this.url}/api/chat`,
+                method: 'POST',
+                body: JSON.stringify(requestBody),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.status !== 200) {
+                throw new Error(`Ollama API returned status ${response.status}`);
+            }
+
+            const data = response.json;
+            let responseText = data.message?.content?.trim();
+
+            if (!responseText) {
+                responseText = data.response?.trim();
+            }
+
+            if (!responseText) {
+                console.error("Empty response from Ollama for summary");
+                return "";
+            }
+
+            return responseText;
+
+        } catch (error) {
+            console.error("Error calling Ollama for summary:", error);
+            if (error.message && error.message.includes('404')) {
+                throw new Error(`Ollama Model '${this.model}' not found (404). Check your settings.`);
+            }
+            throw error;
+        }
+    }
+
     async getModels(): Promise<string[]> {
         try {
             const response = await requestUrl({
