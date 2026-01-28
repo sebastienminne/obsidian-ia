@@ -44,7 +44,13 @@ This document outlines the standards and practices for contributing to the **Obs
     - `test: ...` for adding/fixing tests.
     - `chore: ...` for build/tooling maintenance.
 
-## 7. Obsidian Best Practices
+## 7. Release Process
+- **Versioning**:
+    - **Increment Version**: Before every commit/push that adds features or fixes, increment the version using `npm version patch` (or minor/major).
+    - This automatically updates `package.json`, `manifest.json`, and `versions.json`.
+    - **Git**: The `npm version` command creates a git commit and tag. Push these tags (`git push --follow-tags`).
+
+## 8. Obsidian Best Practices
 Obsidian plugins run inside a specific environment. Follow these patterns:
 
 - **Lifecycle**:
