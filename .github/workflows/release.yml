@@ -9,6 +9,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v3
 
@@ -32,6 +35,5 @@ jobs:
           files: |
             main.js
             manifest.json
-            styles.css
           draft: false
           prerelease: false
