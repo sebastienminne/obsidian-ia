@@ -3,10 +3,12 @@
 This plugin uses a local Ollama instance to analyze your notes and suggest relevant tags.
 
 ## Features
-- **Multi-Provider Support**: Choose between **Ollama** (Local) or **Apple Intelligence** (Experimental).
-- **AI-Powered Suggestions**: Uses local LLMs to understand your note's context.
-- **Privacy Focused**: All processing happens locally on your machine.
-- **Interactive Review**: Review suggested tags before adding them to your note.
+- **Smart Tag Suggestions**: Analyze your note to suggest relevant tags (existing & new).
+- **Meeting Minutes Generation**: Instantly generate a succinct summary of your meeting notes, with a dedicated "Add to Note Header" button.
+- **Text Correction**: Correct spelling and grammar of selected text.
+- **Language Aware**: Automatically detects the note's language and generates tags/summaries in the same language.
+- **Privacy Focused**: All processing happens locally on your machine using **Ollama**.
+- **Interactive Review**: dedicated UI to review generated content before insertion.
 
 ## Prerequisites
 1. **Obsidian**: You need Obsidian installed.
@@ -39,12 +41,22 @@ Since this plugin is not yet in the community store, you need to install it manu
     - **Shortcut Name**: The name of the macOS Shortcut to run (default: "Suggest Tags").
 
 ## Usage
-1. Open a note in Obsidian.
-2. Click the **Tag Icon** in the left ribbon OR run the command **"Suggest Tags with Ollama"** (Cmd/Ctrl + P).
-3. A modal will appear with suggested tags.
-4. Uncheck any tags you don't want.
-5. Click **"Add Selected Tags"**.
-6. The tags will be added to your note's Frontmatter (YAML header).
+
+### 1. Suggest Tags
+1. Open a note.
+2. Click the **Bot Icon** in the ribbon or run **"Suggest Tags"**.
+3. Select the tags you want and click "Add Selected Tags".
+
+### 2. Generate Meeting Minutes
+1. Open a note containing meeting info.
+2. Run command **"Generate Meeting Minutes"**.
+3. Review the summary in the popup.
+4. Click **"Add to Note Header"** to insert it at the top (or copy it).
+
+### 3. Correct Text
+1. Select text in editor.
+2. Right-click -> **"Correct Text"** (or use command).
+3. The text will be replaced with the corrected version.
 
 ## Troubleshooting
 - **"Error calling Ollama"**: Ensure Ollama is running (`ollama serve`) and the URL in settings is correct.
