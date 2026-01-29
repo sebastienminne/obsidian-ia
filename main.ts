@@ -38,7 +38,7 @@ export default class OllamaTaggerPlugin extends Plugin {
 
             menu.addItem((item) =>
                 item
-                    .setTitle('Suggest Tags')
+                    .setTitle('Suggest tags')
                     .setIcon('tag')
                     .onClick(() => {
                         void this.suggestTags();
@@ -47,7 +47,7 @@ export default class OllamaTaggerPlugin extends Plugin {
 
             menu.addItem((item) =>
                 item
-                    .setTitle('Correct Text')
+                    .setTitle('Correct text')
                     .setIcon('check-circle')
                     .onClick(() => {
                         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -61,7 +61,7 @@ export default class OllamaTaggerPlugin extends Plugin {
 
             menu.addItem((item) =>
                 item
-                    .setTitle('Generate Meeting Minutes')
+                    .setTitle('Generate meeting minutes')
                     .setIcon('file-text')
                     .onClick(() => {
                         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -79,7 +79,7 @@ export default class OllamaTaggerPlugin extends Plugin {
         // This adds a simple command that can be triggered anywhere
         this.addCommand({
             id: 'suggest-tags-ollama',
-            name: 'Suggest Tags',
+            name: 'Suggest tags',
             editorCallback: (editor: Editor, view: MarkdownView) => {
                 void this.suggestTags(editor, view);
             }
@@ -92,19 +92,19 @@ export default class OllamaTaggerPlugin extends Plugin {
             this.app.workspace.on("editor-menu", (menu, editor, view) => {
                 menu.addItem((item) => {
                     item
-                        .setTitle("Corriger")
+                        .setTitle("Correct text")
                         .setIcon("check-circle")
-                        .onClick(async () => {
-                            await this.handleCorrection(editor);
+                        .onClick(() => {
+                            void this.handleCorrection(editor);
                         });
                 });
                 menu.addItem((item) => {
                     item
-                        .setTitle("Generate Meeting Minutes")
+                        .setTitle("Generate meeting minutes")
                         .setIcon("file-text")
-                        .onClick(async () => {
+                        .onClick(() => {
                             if (view instanceof MarkdownView) {
-                                await this.generateMeetingMinutes(editor, view);
+                                void this.generateMeetingMinutes(editor, view);
                             }
                         });
                 });

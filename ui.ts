@@ -98,10 +98,12 @@ export class SummaryModal extends Modal {
         // Copy Button
         const copyBtn = buttonContainer.createEl('button', { text: 'Copy to clipboard' });
         copyBtn.classList.add('mod-cta'); // Make it primary
-        copyBtn.addEventListener('click', async () => {
-            await navigator.clipboard.writeText(this.summary);
-            new Notice('Summary copied to clipboard!');
-            this.close();
+        copyBtn.addEventListener('click', () => {
+            void (async () => {
+                await navigator.clipboard.writeText(this.summary);
+                new Notice('Summary copied to clipboard!');
+                this.close();
+            })();
         });
 
         // Close Button
