@@ -33,7 +33,7 @@ export default class OllamaTaggerPlugin extends Plugin {
 
         // This creates an icon in the left ribbon.
         // This creates an icon in the left ribbon.
-        const ribbonIconEl = this.addRibbonIcon('bot', 'Local LLM Actions', (evt: MouseEvent) => {
+        this.addRibbonIcon('bot', 'Local LLM Actions', (evt: MouseEvent) => {
             const menu = new Menu();
 
             menu.addItem((item) =>
@@ -41,7 +41,7 @@ export default class OllamaTaggerPlugin extends Plugin {
                     .setTitle('Suggest Tags')
                     .setIcon('tag')
                     .onClick(() => {
-                        this.suggestTags();
+                        void this.suggestTags();
                     })
             );
 
@@ -52,7 +52,7 @@ export default class OllamaTaggerPlugin extends Plugin {
                     .onClick(() => {
                         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
                         if (view) {
-                            this.handleCorrection(view.editor);
+                            void this.handleCorrection(view.editor);
                         } else {
                             new Notice("No active editor");
                         }
@@ -66,7 +66,7 @@ export default class OllamaTaggerPlugin extends Plugin {
                     .onClick(() => {
                         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
                         if (view) {
-                            this.generateMeetingMinutes(view.editor, view);
+                            void this.generateMeetingMinutes(view.editor, view);
                         } else {
                             new Notice("No active editor");
                         }
@@ -81,23 +81,21 @@ export default class OllamaTaggerPlugin extends Plugin {
             id: 'suggest-tags-ollama',
             name: 'Suggest Tags',
             editorCallback: (editor: Editor, view: MarkdownView) => {
-                this.suggestTags(editor, view);
+                void this.suggestTags(editor, view);
             }
         });
 
-        console.log("Local LLM: Plugin Loaded");
         new Notice("Local LLM v1.1.0 Loaded");
 
         // Add context menu item for correction
         this.registerEvent(
             this.app.workspace.on("editor-menu", (menu, editor, view) => {
-                console.log("Local LLM: Editor menu triggered");
                 menu.addItem((item) => {
                     item
                         .setTitle("Corriger")
                         .setIcon("check-circle")
                         .onClick(async () => {
-                            this.handleCorrection(editor);
+                            await this.handleCorrection(editor);
                         });
                 });
                 menu.addItem((item) => {
@@ -106,7 +104,7 @@ export default class OllamaTaggerPlugin extends Plugin {
                         .setIcon("file-text")
                         .onClick(async () => {
                             if (view instanceof MarkdownView) {
-                                this.generateMeetingMinutes(editor, view);
+                                await this.generateMeetingMinutes(editor, view);
                             }
                         });
                 });
@@ -180,11 +178,16 @@ export default class OllamaTaggerPlugin extends Plugin {
         new Notice(`Generating tag suggestions using Ollama...`);
 
         try {
-            const allTags = (this.app.metadataCache as any).getTags();
+            // Define extended interface for internal API
+            interface ExtendedMetadataCache {
+                getTags(): Record<string, number>;
+            }
+            const allTags = (this.app.metadataCache as unknown as ExtendedMetadataCache).getTags();
+
             // Pass the entire record { '#tag': count } to the provider
             const suggestedTags = await this.llmProvider.generateTags(content, allTags, this.settings.tagSuggestionPrompt);
-            new TagSuggestionModal(this.app, suggestedTags as any[], (selectedTags) => {
-                this.addTagsToNote(view, selectedTags);
+            new TagSuggestionModal(this.app, suggestedTags, (selectedTags) => {
+                this.addTagsToNote(view!, selectedTags);
             }).open();
         } catch (error) {
             new Notice('Error generating tags: ' + error.message);

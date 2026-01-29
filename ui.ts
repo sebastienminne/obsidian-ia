@@ -15,31 +15,27 @@ export class TagSuggestionModal extends Modal {
     onOpen() {
         const { contentEl } = this;
 
-        contentEl.createEl('h2', { text: 'Suggested Tags' });
+        new Setting(contentEl).setName('Suggested tags').setHeading();
 
         const tagsContainer = contentEl.createDiv({ cls: 'tag-suggestions-container' });
-        tagsContainer.style.display = 'flex';
-        tagsContainer.style.flexDirection = 'column';
-        tagsContainer.style.gap = '10px';
-        tagsContainer.style.marginBottom = '20px';
 
         // Group suggestions
         const existingTags = this.suggestions.filter(s => s.type === 'existing');
         const newTags = this.suggestions.filter(s => s.type === 'new');
 
         if (existingTags.length > 0) {
-            tagsContainer.createEl('h3', { text: 'Existing Tags', cls: 'tag-group-header' });
+            new Setting(tagsContainer).setName('Existing tags').setHeading();
             this.createTagList(tagsContainer, existingTags);
         }
 
         if (newTags.length > 0) {
-            tagsContainer.createEl('h3', { text: 'New Tags', cls: 'tag-group-header' });
+            new Setting(tagsContainer).setName('New tags').setHeading();
             this.createTagList(tagsContainer, newTags);
         }
 
         new Setting(contentEl)
             .addButton(btn => btn
-                .setButtonText('Add Selected Tags')
+                .setButtonText('Add selected tags')
                 .setCta()
                 .onClick(() => {
                     this.close();
@@ -85,29 +81,22 @@ export class SummaryModal extends Modal {
 
     onOpen() {
         const { contentEl } = this;
-        contentEl.createEl('h2', { text: 'Meeting Minutes Summary' });
+        new Setting(contentEl).setName('Meeting minutes summary').setHeading();
 
         const summaryContainer = contentEl.createDiv({ cls: 'summary-container' });
-        summaryContainer.style.marginBottom = '20px';
-        summaryContainer.style.whiteSpace = 'pre-wrap';
-        summaryContainer.style.userSelect = 'text';
         summaryContainer.createEl('p', { text: this.summary });
 
         const buttonContainer = contentEl.createDiv({ cls: 'summary-buttons' });
-        buttonContainer.style.display = 'flex';
-        buttonContainer.style.justifyContent = 'flex-end'; // Right align
-        buttonContainer.style.gap = '10px'; // Space between buttons
-        buttonContainer.style.marginTop = '20px';
 
         // Add to Note Button
-        const addToNoteBtn = buttonContainer.createEl('button', { text: 'Add to Note Header' });
+        const addToNoteBtn = buttonContainer.createEl('button', { text: 'Add to note header' });
         addToNoteBtn.addEventListener('click', () => {
             this.onAddToNote();
             this.close();
         });
 
         // Copy Button
-        const copyBtn = buttonContainer.createEl('button', { text: 'Copy to Clipboard' });
+        const copyBtn = buttonContainer.createEl('button', { text: 'Copy to clipboard' });
         copyBtn.classList.add('mod-cta'); // Make it primary
         copyBtn.addEventListener('click', async () => {
             await navigator.clipboard.writeText(this.summary);

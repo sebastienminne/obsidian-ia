@@ -1,5 +1,5 @@
-import { requestUrl, RequestUrlParam } from 'obsidian';
-import { LLMProvider } from './llm_provider';
+import { requestUrl } from 'obsidian';
+import { LLMProvider, SuggestedTag } from './llm_provider';
 
 export class OllamaService implements LLMProvider {
     private url: string;
@@ -20,7 +20,7 @@ export class OllamaService implements LLMProvider {
         }
     }
 
-    async generateTags(content: string, existingTags?: Record<string, number>, promptTemplate?: string): Promise<any[]> {
+    async generateTags(content: string, existingTags?: Record<string, number>, promptTemplate?: string): Promise<SuggestedTag[]> {
         let systemPrompt = promptTemplate || `
 You are an intelligent assistant that analyzes notes to suggest metadata.
 Generate a comprehensive list of at least 10 relevant tags for the provided Note Content.
@@ -126,8 +126,6 @@ ${content.substring(0, 5000)}`
             }
         };
 
-        console.log("Ollama Request Messages:", JSON.stringify(messages, null, 2));
-
         try {
             const response = await requestUrl({
                 url: `${this.url}/api/chat`,
@@ -216,7 +214,7 @@ ${content.substring(0, 5000)}`
                 tag: item.tag?.toLowerCase().replace(/\s+/g, '-').replace(/^#/, '') || 'unknown',
                 type: item.type === 'existing' ? 'existing' : 'new',
                 justification: item.justification || 'No justification provided'
-            })).filter((t: any) => t.tag !== 'unknown');
+            })).filter((t: SuggestedTag) => t.tag !== 'unknown');
 
         } catch (error) {
             console.error("Error calling Ollama:", error);
