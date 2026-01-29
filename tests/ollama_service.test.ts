@@ -77,7 +77,10 @@ describe('OllamaService', () => {
             const systemContent = requestBody.messages[0].content;
 
             expect(systemContent).toContain('IMPORTANT: Detect the language of the note content.');
+
+            expect(systemContent).toContain('IMPORTANT: Detect the language of the note content.');
             expect(systemContent).toContain('Generate tags in the SAME language as the note content');
+            expect(systemContent).toContain('The "justification" field MUST be in the SAME language');
         });
 
         it('should handle { tags: [...] } wrapper', async () => {

@@ -67,3 +67,20 @@ Obsidian plugins run inside a specific environment. Follow these patterns:
 - **Design**:
     - Respect the user's theme (CSS variables).
     - Avoid direct DOM manipulation; use Obsidian's helper functions when possible.
+
+## 9. Obsidian Submission Guidelines
+To ensure acceptance in the Community Plugin list, follow these rules strictly:
+
+- **Styles**:
+    - **No Inline Styles**: Never use `element.style.prop = ...`.
+    - **CSS**: Use `addClass('class-name')` and define styles in `styles.css`.
+- **UI**:
+    - **Headings**: Use `new Setting(el).setHeading()` instead of creating `<h1>`-`<h6>` manually.
+    - **Text Case**: Use **Sentence case** for all UI text (e.g., "Add to note", not "Add To Note").
+    - **Fragments**: Do not use `DocumentFragment` unless strictly necessary.
+- **Code**:
+    - **Async/Await**: All Promises must be handled. Use `await` or `void` to explicitly ignore.
+    - **Console**: No `console.log`. Use `console.warn` or `console.error` sparingly.
+    - **Types**: No `any`. Use interfaces.
+    - **No Obfuscation**: Code must be readable.
+    

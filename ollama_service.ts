@@ -33,6 +33,7 @@ Do NOT output markdown formatting (like \`\`\`json).
 Just the raw JSON array.
 
 IMPORTANT: Detect the language of the note content. Generate tags in the SAME language as the note content, unless the tag is a technical term standardly used in English.
+The "justification" field MUST be in the SAME language as the note content.
 
 Each object must have:
 - "tag": The tag name (lowercase, no spaces, kebab-case).
