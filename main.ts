@@ -113,17 +113,17 @@ export default class OllamaTaggerPlugin extends Plugin {
 
         this.addCommand({
             id: 'correct-text-ollama',
-            name: 'Correct Selected Text',
+            name: 'Correct selected text',
             editorCallback: (editor: Editor, view: MarkdownView) => {
-                this.handleCorrection(editor);
+                void this.handleCorrection(editor);
             }
         });
 
         this.addCommand({
             id: 'generate-meeting-minutes',
-            name: 'Generate Meeting Minutes',
+            name: 'Generate meeting minutes',
             editorCallback: (editor: Editor, view: MarkdownView) => {
-                this.generateMeetingMinutes(editor, view);
+                void this.generateMeetingMinutes(editor, view);
             }
         });
         // This adds a settings tab so the user can configure various aspects of the plugin
@@ -178,11 +178,7 @@ export default class OllamaTaggerPlugin extends Plugin {
         new Notice(`Generating tag suggestions using Ollama...`);
 
         try {
-            // Define extended interface for internal API
-            interface ExtendedMetadataCache {
-                getTags(): Record<string, number>;
-            }
-            const allTags = (this.app.metadataCache as unknown as ExtendedMetadataCache).getTags();
+            const allTags = this.app.metadataCache.getTags();
 
             // Pass the entire record { '#tag': count } to the provider
             const suggestedTags = await this.llmProvider.generateTags(content, allTags, this.settings.tagSuggestionPrompt);
@@ -262,7 +258,7 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
 
         containerEl.empty();
 
-        containerEl.createEl('h2', { text: 'Local LLM Settings' });
+        new Setting(containerEl).setName('Local LLM settings').setHeading();
 
         new Setting(containerEl)
             .setName('Ollama URL')
@@ -278,7 +274,7 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
 
         // Better approach for Async Dropdown in Obsidian Settings:
         const modelSetting = new Setting(containerEl)
-            .setName('Model Name')
+            .setName('Model name')
             .setDesc('Select the model to use.');
 
         modelSetting.addDropdown(dropdown => {
@@ -342,15 +338,11 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
         })();
 
         const detailsEl = containerEl.createEl('details');
-        detailsEl.createEl('summary', { text: 'Fine Tuning' });
-        // Add some style to make it look decent
-        detailsEl.style.marginTop = '20px';
-        detailsEl.style.border = '1px solid var(--background-modifier-border)';
-        detailsEl.style.padding = '10px';
-        detailsEl.style.borderRadius = '4px';
+        detailsEl.addClass('fine-tuning-details');
+        detailsEl.createEl('summary', { text: 'Fine tuning' });
 
         new Setting(detailsEl)
-            .setName('Creativity (Temperature)')
+            .setName('Creativity (temperature)')
             .setDesc('Adjust how creative or precise the model should be. Lower values are more deterministic, higher values are more creative/random.')
             .addSlider(slider => slider
                 .setLimits(0, 1, 0.1)
@@ -363,7 +355,7 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(detailsEl)
-            .setName('Tag Suggestion Prompt')
+            .setName('Tag suggestion prompt')
             .setDesc('Custom system prompt for tag generation. Leave empty to use default.')
             .addTextArea(text => text
                 .setPlaceholder('Default prompt will be used if empty...')
@@ -374,7 +366,7 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(detailsEl)
-            .setName('Spell Correction Prompt')
+            .setName('Spell correction prompt')
             .setDesc('Custom system prompt for text correction. Leave empty to use default.')
             .addTextArea(text => text
                 .setPlaceholder('Default prompt will be used if empty...')
@@ -385,7 +377,7 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(detailsEl)
-            .setName('Meeting Minutes Prompt')
+            .setName('Meeting minutes prompt')
             .setDesc('Custom system prompt for meeting minutes generation.')
             .addTextArea(text => text
                 .setPlaceholder('Default prompt will be used if empty...')
