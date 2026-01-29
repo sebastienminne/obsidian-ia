@@ -1,6 +1,6 @@
 {
   "name": "ollama-tagger",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "Your private AI assistant. Generate meeting minutes, get smart context-aware tag suggestions, and correct text—all running locally via Ollama.",
   "main": "main.js",
   "scripts": {
