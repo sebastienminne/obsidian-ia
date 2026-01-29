@@ -178,7 +178,11 @@ export default class OllamaTaggerPlugin extends Plugin {
         new Notice(`Generating tag suggestions using Ollama...`);
 
         try {
-            const allTags = this.app.metadataCache.getTags();
+            // Define extended interface for internal API
+            interface ExtendedMetadataCache {
+                getTags(): Record<string, number>;
+            }
+            const allTags = (this.app.metadataCache as unknown as ExtendedMetadataCache).getTags();
 
             // Pass the entire record { '#tag': count } to the provider
             const suggestedTags = await this.llmProvider.generateTags(content, allTags, this.settings.tagSuggestionPrompt);
