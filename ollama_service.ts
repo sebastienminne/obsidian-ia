@@ -151,7 +151,6 @@ ${content.substring(0, 5000)}`
             }
 
             if (!responseText) {
-                console.error("Empty response from Ollama");
                 return [];
             }
 
@@ -168,8 +167,8 @@ ${content.substring(0, 5000)}`
                     const jsonStr = responseText.substring(firstBracket, end + 1);
                     try {
                         parsed = JSON.parse(jsonStr);
-                    } catch (e) {
-                        console.error("Failed to parse JSON array, trying fix", e);
+                    } catch {
+                        // Failed to parse, will try alternate approach
                     }
                 }
             }
@@ -189,15 +188,14 @@ ${content.substring(0, 5000)}`
                         const fixedStr = `[${jsonStr.replace(/}\s*{/g, '},{')}]`;
                         try {
                             parsed = JSON.parse(fixedStr);
-                        } catch (e2) {
-                            console.error("Failed to parse fixed JSON objects", e2);
+                        } catch {
+                            // Could not fix malformed JSON
                         }
                     }
                 }
             }
 
             if (!parsed) {
-                console.error("No valid JSON found in response");
                 return [];
             }
 
@@ -224,8 +222,8 @@ ${content.substring(0, 5000)}`
             }).filter((t: SuggestedTag) => t.tag !== 'unknown');
 
         } catch (error) {
-            console.error("Error calling Ollama:", error);
-            if (error.message && error.message.includes('404')) {
+            const err = error as Error;
+            if (err.message && err.message.includes('404')) {
                 throw new Error(`Ollama Model '${this.model}' not found (404). Check your settings.`);
             }
             throw error;
@@ -292,8 +290,8 @@ Do NOT add quotes around the output unless they were in the original text.
             return responseText || content; // Return original if fail
 
         } catch (error) {
-            console.error("Error calling Ollama for correction:", error);
-            if (error.message && error.message.includes('404')) {
+            const err = error as Error;
+            if (err.message && err.message.includes('404')) {
                 throw new Error(`Ollama Model '${this.model}' not found (404). Check your settings.`);
             }
             throw error;
@@ -357,15 +355,14 @@ STRICT INSTRUCTIONS:
             }
 
             if (!responseText) {
-                console.error("Empty response from Ollama for summary");
                 return "";
             }
 
             return responseText;
 
         } catch (error) {
-            console.error("Error calling Ollama for summary:", error);
-            if (error.message && error.message.includes('404')) {
+            const err = error as Error;
+            if (err.message && err.message.includes('404')) {
                 throw new Error(`Ollama Model '${this.model}' not found (404). Check your settings.`);
             }
             throw error;
@@ -380,7 +377,6 @@ STRICT INSTRUCTIONS:
             });
 
             if (response.status !== 200) {
-                console.error("Failed to fetch models, status:", response.status);
                 return [];
             }
 
@@ -390,8 +386,7 @@ STRICT INSTRUCTIONS:
                 return data.models.map((m: { name: string }) => m.name);
             }
             return [];
-        } catch (error) {
-            console.error("Error fetching models:", error);
+        } catch {
             return [];
         }
     }

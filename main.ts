@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Menu, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Menu, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { LLMProvider } from './llm_provider';
 import { OllamaService } from './ollama_service';
 import { TagSuggestionModal, SummaryModal } from './ui';
@@ -190,8 +190,8 @@ export default class OllamaTaggerPlugin extends Plugin {
                 this.addTagsToNote(view!, selectedTags);
             }).open();
         } catch (error) {
-            new Notice('Error generating tags: ' + error.message);
-            console.error(error);
+            const err = error as Error;
+            new Notice('Error generating tags: ' + err.message);
         }
     }
 
@@ -214,8 +214,8 @@ export default class OllamaTaggerPlugin extends Plugin {
                 new Notice("Failed to generate summary.");
             }
         } catch (error) {
-            new Notice('Error generating summary: ' + error.message);
-            console.error(error);
+            const err = error as Error;
+            new Notice('Error generating summary: ' + err.message);
         }
     }
 
@@ -262,10 +262,10 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
 
         containerEl.empty();
 
-        new Setting(containerEl).setName('Local LLM settings').setHeading();
+        new Setting(containerEl).setName('Local LLM').setHeading();
 
         new Setting(containerEl)
-            .setName('Ollama URL')
+            .setName('Ollama url')
             .setDesc('The URL of your local Ollama instance')
             .addText(text => text
                 .setPlaceholder('http://localhost:11434')
@@ -287,14 +287,14 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
         });
 
         // Load models asynchronously and rebuild dropdown
-        (async () => {
+        void (async () => {
             let models: string[] = [];
             try {
                 if (this.plugin.llmProvider && this.plugin.llmProvider.getModels) {
                     models = await this.plugin.llmProvider.getModels();
                 }
-            } catch (e) {
-                console.error("Failed to load models in settings:", e);
+            } catch {
+                // Silently fail - user will see "No models found" in dropdown
             }
 
             // Sort models
@@ -338,8 +338,8 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
         detailsEl.createEl('summary', { text: 'Fine tuning' });
 
         new Setting(detailsEl)
-            .setName('Creativity (temperature)')
-            .setDesc('Adjust how creative or precise the model should be. Lower values are more deterministic, higher values are more creative/random.')
+            .setName('Creativity')
+            .setDesc('Adjust how creative or precise the model should be (temperature). Lower values are more deterministic, higher values are more creative.')
             .addSlider(slider => slider
                 .setLimits(0, 1, 0.1)
                 .setValue(this.plugin.settings.creativity)
