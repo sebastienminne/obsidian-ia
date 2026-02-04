@@ -286,7 +286,7 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
             dropdown.setValue('');
         });
 
-        // Load models asynchronously
+        // Load models asynchronously and rebuild dropdown
         (async () => {
             let models: string[] = [];
             try {
@@ -300,45 +300,37 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
             // Sort models
             models.sort();
 
-            const dropdownComponent = (modelSetting.components[0] as any);
-
-            // Clear options (select element)
-            if (dropdownComponent && dropdownComponent.selectEl) {
-                dropdownComponent.selectEl.innerHTML = ''; // Clear loading
-
+            // Rebuild the dropdown with loaded models
+            modelSetting.clear();
+            modelSetting.addDropdown(dropdown => {
                 if (models.length === 0) {
-                    const opt = dropdownComponent.selectEl.createEl('option');
-                    opt.text = "No models found (check URL)";
-                    opt.value = "";
-                    // Keep current value if possible, so user isn't stuck
+                    dropdown.addOption('', 'No models found (check URL)');
                     if (this.plugin.settings.modelName) {
-                        const currentOpt = dropdownComponent.selectEl.createEl('option');
-                        currentOpt.text = this.plugin.settings.modelName + " (current)";
-                        currentOpt.value = this.plugin.settings.modelName;
-                        dropdownComponent.setValue(this.plugin.settings.modelName);
+                        dropdown.addOption(this.plugin.settings.modelName, this.plugin.settings.modelName + ' (current)');
+                        dropdown.setValue(this.plugin.settings.modelName);
+                    } else {
+                        dropdown.setValue('');
                     }
                 } else {
                     models.forEach(m => {
-                        const opt = dropdownComponent.selectEl.createEl('option');
-                        opt.text = m;
-                        opt.value = m;
+                        dropdown.addOption(m, m);
                     });
 
                     // Auto-select logic
                     if (!this.plugin.settings.modelName && models.length === 1) {
                         this.plugin.settings.modelName = models[0];
-                        await this.plugin.saveSettings();
+                        void this.plugin.saveSettings();
                     }
 
                     // Ensure current setting is selected
-                    dropdownComponent.setValue(this.plugin.settings.modelName);
+                    dropdown.setValue(this.plugin.settings.modelName || models[0]);
                 }
 
-                dropdownComponent.onChange(async (value: string) => {
+                dropdown.onChange(async (value: string) => {
                     this.plugin.settings.modelName = value;
                     await this.plugin.saveSettings();
                 });
-            }
+            });
         })();
 
         const detailsEl = containerEl.createEl('details');

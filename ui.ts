@@ -1,11 +1,12 @@
 import { App, Modal, Setting, Notice } from 'obsidian';
+import { SuggestedTag } from './llm_provider';
 
 export class TagSuggestionModal extends Modal {
-    private suggestions: any[]; // Using any to avoid importing SuggestedTag here if lazy, but better to import
+    private suggestions: SuggestedTag[];
     private onSubmit: (selectedTags: string[]) => void;
     private selectedTags: Set<string>;
 
-    constructor(app: App, suggestions: any[], onSubmit: (selectedTags: string[]) => void) {
+    constructor(app: App, suggestions: SuggestedTag[], onSubmit: (selectedTags: string[]) => void) {
         super(app);
         this.suggestions = suggestions;
         this.onSubmit = onSubmit;
@@ -43,7 +44,7 @@ export class TagSuggestionModal extends Modal {
                 }));
     }
 
-    createTagList(container: HTMLElement, tags: any[]) {
+    createTagList(container: HTMLElement, tags: SuggestedTag[]) {
         tags.forEach(item => {
             const setting = new Setting(container)
                 .setName(item.tag)

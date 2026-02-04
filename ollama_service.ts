@@ -159,7 +159,7 @@ ${content.substring(0, 5000)}`
             const firstBracket = responseText.indexOf('[');
             const firstBrace = responseText.indexOf('{');
 
-            let parsed: any;
+            let parsed: unknown = null;
 
             // Case 1: It looks like an array
             if (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
@@ -202,8 +202,11 @@ ${content.substring(0, 5000)}`
             }
 
             // Handle { "tags": [...] } wrapper
-            if (!Array.isArray(parsed) && parsed.tags && Array.isArray(parsed.tags)) {
-                parsed = parsed.tags;
+            if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+                const wrappedObj = parsed as Record<string, unknown>;
+                if (wrappedObj.tags && Array.isArray(wrappedObj.tags)) {
+                    parsed = wrappedObj.tags;
+                }
             }
 
             if (!Array.isArray(parsed)) {
@@ -211,11 +214,14 @@ ${content.substring(0, 5000)}`
             }
 
             // Validate structure
-            return parsed.map((item: any) => ({
-                tag: item.tag?.toLowerCase().replace(/\s+/g, '-').replace(/^#/, '') || 'unknown',
-                type: item.type === 'existing' ? 'existing' : 'new',
-                justification: item.justification || 'No justification provided'
-            })).filter((t: SuggestedTag) => t.tag !== 'unknown');
+            return (parsed as unknown[]).map((item: unknown) => {
+                const obj = item as Record<string, unknown>;
+                return {
+                    tag: (typeof obj.tag === 'string' ? obj.tag : String(obj.tag || '')).toLowerCase().replace(/\s+/g, '-').replace(/^#/, '') || 'unknown',
+                    type: obj.type === 'existing' ? 'existing' as const : 'new' as const,
+                    justification: typeof obj.justification === 'string' ? obj.justification : 'No justification provided'
+                };
+            }).filter((t: SuggestedTag) => t.tag !== 'unknown');
 
         } catch (error) {
             console.error("Error calling Ollama:", error);
@@ -381,7 +387,7 @@ STRICT INSTRUCTIONS:
             // Ollama returns { models: [ { name: "llama3:latest", ... }, ... ] }
             const data = response.json;
             if (data && Array.isArray(data.models)) {
-                return data.models.map((m: any) => m.name);
+                return data.models.map((m: { name: string }) => m.name);
             }
             return [];
         } catch (error) {
