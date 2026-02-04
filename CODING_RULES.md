@@ -69,18 +69,82 @@ Obsidian plugins run inside a specific environment. Follow these patterns:
     - Avoid direct DOM manipulation; use Obsidian's helper functions when possible.
 
 ## 9. Obsidian Submission Guidelines
-To ensure acceptance in the Community Plugin list, follow these rules strictly:
+To ensure acceptance in the Community Plugin list, follow these rules strictly. These are enforced by the **ObsidianReviewBot**.
 
-- **Styles**:
-    - **No Inline Styles**: Never use `element.style.prop = ...`.
-    - **CSS**: Use `addClass('class-name')` and define styles in `styles.css`.
-- **UI**:
-    - **Headings**: Use `new Setting(el).setHeading()` instead of creating `<h1>`-`<h6>` manually.
-    - **Text Case**: Use **Sentence case** for all UI text (e.g., "Add to note", not "Add To Note").
-    - **Fragments**: Do not use `DocumentFragment` unless strictly necessary.
-- **Code**:
-    - **Async/Await**: All Promises must be handled. Use `await` or `void` to explicitly ignore.
-    - **Console**: No `console.log`. Use `console.warn` or `console.error` sparingly.
-    - **Types**: No `any`. Use interfaces.
-    - **No Obfuscation**: Code must be readable.
-    
+### 9.1 Styling
+- **No Inline Styles**: Never use `element.style.prop = ...` or `setCssProps()`.
+- **CSS Classes**: Use `addClass('class-name')` and define styles in `styles.css`.
+- **Theme Compatibility**: Use CSS variables (e.g., `var(--background-modifier-border)`).
+
+### 9.2 UI Text & Elements
+- **Sentence Case**: All UI text must use sentence case.
+  - ✅ `"Suggest tags"`, `"Add to note"`
+  - ❌ `"Suggest Tags"`, `"Add To Note"`
+- **Settings Headings**: 
+  - Use `new Setting(el).setName('...').setHeading()` instead of `createEl('h1')`.
+  - Do NOT include the word "settings" in settings headings.
+  - Do NOT include the plugin name in settings headings.
+- **Document Fragments**: Avoid `DocumentFragment` unless strictly necessary.
+
+### 9.3 Async & Promise Handling
+- **No Unawaited Promises**: All Promises must be handled.
+  - Use `await` for sequential operations.
+  - Use `void` to explicitly ignore fire-and-forget promises.
+  - Use `.catch()` for error handling.
+- **Async Callbacks**: If an event callback is async, wrap the call:
+  ```typescript
+  // ❌ Bad
+  .onClick(async () => { await doSomething(); })
+  
+  // ✅ Good
+  .onClick(() => { void doSomething(); })
+  ```
+- **Async IIFEs**: Must be prefixed with `void`:
+  ```typescript
+  void (async () => {
+      const data = await fetchData();
+  })();
+  ```
+
+### 9.4 Type Safety
+- **No `any` Type**: Use specific types or `unknown` with type guards.
+  ```typescript
+  // ❌ Bad
+  let data: any;
+  
+  // ✅ Good
+  let data: unknown;
+  const obj = data as Record<string, unknown>;
+  ```
+- **Error Typing**: Always type caught errors:
+  ```typescript
+  } catch (error) {
+      const err = error as Error;
+      new Notice(err.message);
+  }
+  ```
+- **No Type Assertions** to `any` (e.g., `as any`).
+
+### 9.5 Console Usage
+- **No `console.log`**: Forbidden in production code.
+- **Allowed**: `console.warn`, `console.error`, `console.debug` (sparingly).
+- **User Feedback**: Use `Notice` for user-facing messages.
+
+### 9.6 Code Quality
+- **No Unused Imports**: Remove all unused imports and variables.
+- **No Unused Catch Variables**: Use empty `catch {}` if variable is not needed.
+- **No Obfuscation**: Code must be readable and unminified in source.
+- **No External Network Calls**: Unless essential to plugin functionality.
+
+### 9.7 Manifest & Release
+- **`manifest.json`**:
+  - `id`: Must match the folder name and `package.json` name.
+  - `authorUrl`: Must be a valid URL (typically GitHub profile).
+  - `version`: Must match `package.json` version.
+- **`versions.json`**: Map each version to minimum Obsidian version.
+- **Release Assets**: Include `main.js`, `manifest.json`, and `styles.css` (if present).
+
+### 9.8 Repository Structure
+- **`styles.css`**: Must be tracked in git (not in `.gitignore`).
+- **`main.js`**: Should be in `.gitignore` (generated file).
+- **Entry in `community-plugins.json`**: Must be at the end of the file.
