@@ -182,7 +182,7 @@ ${content.substring(0, 5000)}`
                     try {
                         const obj = JSON.parse(jsonStr);
                         parsed = obj;
-                    } catch (e) {
+                    } catch {
                         // Maybe it's multiple objects like {...} {...}
                         // Try to comma separate them and wrap in []
                         const fixedStr = `[${jsonStr.replace(/}\s*{/g, '},{')}]`;
@@ -215,7 +215,7 @@ ${content.substring(0, 5000)}`
             return (parsed as unknown[]).map((item: unknown) => {
                 const obj = item as Record<string, unknown>;
                 return {
-                    tag: (typeof obj.tag === 'string' ? obj.tag : String(obj.tag || '')).toLowerCase().replace(/\s+/g, '-').replace(/^#/, '') || 'unknown',
+                    tag: (typeof obj.tag === 'string' ? obj.tag : String(obj.tag ?? '')).toLowerCase().replace(/\s+/g, '-').replace(/^#/, '') || 'unknown',
                     type: obj.type === 'existing' ? 'existing' as const : 'new' as const,
                     justification: typeof obj.justification === 'string' ? obj.justification : 'No justification provided'
                 };

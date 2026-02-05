@@ -33,7 +33,7 @@ export default class OllamaTaggerPlugin extends Plugin {
 
         // This creates an icon in the left ribbon.
         // This creates an icon in the left ribbon.
-        this.addRibbonIcon('bot', 'Local LLM Actions', (evt: MouseEvent) => {
+        this.addRibbonIcon('bot', 'Local LLM actions', (evt: MouseEvent) => {
             const menu = new Menu();
 
             menu.addItem((item) =>
@@ -85,7 +85,7 @@ export default class OllamaTaggerPlugin extends Plugin {
             }
         });
 
-        new Notice("Local LLM v1.1.0 Loaded");
+        new Notice("Plugin loaded");
 
         // Add context menu item for correction
         this.registerEvent(
@@ -175,7 +175,7 @@ export default class OllamaTaggerPlugin extends Plugin {
 
         const content = view.getViewData();
 
-        new Notice(`Generating tag suggestions using Ollama...`);
+        new Notice('Generating tag suggestions...');
 
         try {
             // Define extended interface for internal API
@@ -187,7 +187,7 @@ export default class OllamaTaggerPlugin extends Plugin {
             // Pass the entire record { '#tag': count } to the provider
             const suggestedTags = await this.llmProvider.generateTags(content, allTags, this.settings.tagSuggestionPrompt);
             new TagSuggestionModal(this.app, suggestedTags, (selectedTags) => {
-                this.addTagsToNote(view!, selectedTags);
+                void this.addTagsToNote(view, selectedTags);
             }).open();
         } catch (error) {
             const err = error as Error;
@@ -226,9 +226,9 @@ export default class OllamaTaggerPlugin extends Plugin {
         new Notice("Meeting minutes added to note!");
     }
 
-    addTagsToNote(view: MarkdownView, tags: string[]) {
+    async addTagsToNote(view: MarkdownView, tags: string[]) {
         // Add tags to frontmatter or append to file
-        this.app.fileManager.processFrontMatter(view.file, (frontmatter) => {
+        await this.app.fileManager.processFrontMatter(view.file, (frontmatter) => {
             if (!frontmatter['tags']) {
                 frontmatter['tags'] = [];
             }
@@ -262,7 +262,7 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
 
         containerEl.empty();
 
-        new Setting(containerEl).setName('Local LLM').setHeading();
+        new Setting(containerEl).setName('Connection').setHeading();
 
         new Setting(containerEl)
             .setName('Ollama url')
