@@ -273,7 +273,7 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Server URL')
-            .setDesc('The URL of your local Ollama instance')
+            .setDesc('URL of the local Ollama server')
             .addText(text => text
                 .setPlaceholder('http://localhost:11434')
                 .setValue(this.plugin.settings.ollamaUrl)
