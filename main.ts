@@ -33,7 +33,7 @@ export default class OllamaTaggerPlugin extends Plugin {
 
         // This creates an icon in the left ribbon.
         // This creates an icon in the left ribbon.
-        this.addRibbonIcon('bot', 'Local LLM actions', (evt: MouseEvent) => {
+        this.addRibbonIcon('bot', 'Local LLM', (evt: MouseEvent) => {
             const menu = new Menu();
 
             menu.addItem((item) =>
@@ -238,8 +238,15 @@ export default class OllamaTaggerPlugin extends Plugin {
                 currentTags = [currentTags];
             }
 
+            // Ensure tags are properly stringified and formatted before adding
+            const formattedTags = tags.map(tag => {
+                // Ensure tag is a string, convert if necessary, then format
+                const tagString = typeof tag === 'string' ? tag : String(tag || '');
+                return tagString.toLowerCase().replace(/\s+/g, '-').replace(/^#/, '') || 'unknown';
+            });
+
             // Add new tags avoiding duplicates
-            tags.forEach(tag => {
+            formattedTags.forEach(tag => {
                 if (!currentTags.includes(tag)) {
                     currentTags.push(tag);
                 }
@@ -265,7 +272,7 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
         new Setting(containerEl).setName('Connection').setHeading();
 
         new Setting(containerEl)
-            .setName('Ollama url')
+            .setName('Server URL')
             .setDesc('The URL of your local Ollama instance')
             .addText(text => text
                 .setPlaceholder('http://localhost:11434')
