@@ -33,7 +33,7 @@ export default class OllamaTaggerPlugin extends Plugin {
 
         // This creates an icon in the left ribbon.
         // This creates an icon in the left ribbon.
-        this.addRibbonIcon('bot', 'Local LLM', (evt: MouseEvent) => {
+        this.addRibbonIcon('bot', 'Local AI', (evt: MouseEvent) => {
             const menu = new Menu();
 
             menu.addItem((item) =>
@@ -273,9 +273,9 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Server URL')
-            .setDesc('URL of the local Ollama server')
+            .setDesc('Address of the local Ollama server')
             .addText(text => text
-                .setPlaceholder('http://localhost:11434')
+                .setPlaceholder('Example: http://localhost:11434')
                 .setValue(this.plugin.settings.ollamaUrl)
                 .onChange(async (value) => {
                     this.plugin.settings.ollamaUrl = value;
