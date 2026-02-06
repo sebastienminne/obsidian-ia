@@ -1,6 +1,7 @@
 import { App, Editor, MarkdownView, Menu, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { LLMProvider } from './llm_provider';
 import { OllamaService } from './ollama_service';
+import { t } from './lang/helpers';
 import { TagSuggestionModal, SummaryModal } from './ui';
 import { insertMeetingMinutes } from './text_utils';
 
@@ -33,12 +34,12 @@ export default class OllamaTaggerPlugin extends Plugin {
 
         // This creates an icon in the left ribbon.
         // This creates an icon in the left ribbon.
-        this.addRibbonIcon('bot', 'Local AI', (evt: MouseEvent) => {
+        this.addRibbonIcon('bot', t('RIBBON_ICON_TITLE'), (evt: MouseEvent) => {
             const menu = new Menu();
 
             menu.addItem((item) =>
                 item
-                    .setTitle('Suggest tags')
+                    .setTitle(t('MENU_SUGGEST_TAGS'))
                     .setIcon('tag')
                     .onClick(() => {
                         void this.suggestTags();
@@ -47,28 +48,28 @@ export default class OllamaTaggerPlugin extends Plugin {
 
             menu.addItem((item) =>
                 item
-                    .setTitle('Correct text')
+                    .setTitle(t('MENU_CORRECT_TEXT'))
                     .setIcon('check-circle')
                     .onClick(() => {
                         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
                         if (view) {
                             void this.handleCorrection(view.editor);
                         } else {
-                            new Notice("No active editor");
+                            new Notice(t('NOTICE_NO_EDITOR'));
                         }
                     })
             );
 
             menu.addItem((item) =>
                 item
-                    .setTitle('Generate meeting minutes')
+                    .setTitle(t('MENU_GENERATE_MINUTES'))
                     .setIcon('file-text')
                     .onClick(() => {
                         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
                         if (view) {
                             void this.generateMeetingMinutes(view.editor, view);
                         } else {
-                            new Notice("No active editor");
+                            new Notice(t('NOTICE_NO_EDITOR'));
                         }
                     })
             );
@@ -79,20 +80,20 @@ export default class OllamaTaggerPlugin extends Plugin {
         // This adds a simple command that can be triggered anywhere
         this.addCommand({
             id: 'suggest-tags-ollama',
-            name: 'Suggest tags',
+            name: t('COMMAND_SUGGEST_TAGS'),
             editorCallback: (editor: Editor, view: MarkdownView) => {
                 void this.suggestTags(editor, view);
             }
         });
 
-        new Notice("Plugin loaded");
+        new Notice(t('NOTICE_PLUGIN_LOADED'));
 
         // Add context menu item for correction
         this.registerEvent(
             this.app.workspace.on("editor-menu", (menu, editor, view) => {
                 menu.addItem((item) => {
                     item
-                        .setTitle("Correct text")
+                        .setTitle(t('MENU_CORRECT_TEXT'))
                         .setIcon("check-circle")
                         .onClick(() => {
                             void this.handleCorrection(editor);
@@ -100,7 +101,7 @@ export default class OllamaTaggerPlugin extends Plugin {
                 });
                 menu.addItem((item) => {
                     item
-                        .setTitle("Generate meeting minutes")
+                        .setTitle(t('MENU_GENERATE_MINUTES'))
                         .setIcon("file-text")
                         .onClick(() => {
                             if (view instanceof MarkdownView) {
@@ -113,7 +114,7 @@ export default class OllamaTaggerPlugin extends Plugin {
 
         this.addCommand({
             id: 'correct-text-ollama',
-            name: 'Correct selected text',
+            name: t('COMMAND_CORRECT_TEXT'),
             editorCallback: (editor: Editor, view: MarkdownView) => {
                 void this.handleCorrection(editor);
             }
@@ -121,7 +122,7 @@ export default class OllamaTaggerPlugin extends Plugin {
 
         this.addCommand({
             id: 'generate-meeting-minutes',
-            name: 'Generate meeting minutes',
+            name: t('COMMAND_GENERATE_MINUTES'),
             editorCallback: (editor: Editor, view: MarkdownView) => {
                 void this.generateMeetingMinutes(editor, view);
             }
@@ -133,17 +134,17 @@ export default class OllamaTaggerPlugin extends Plugin {
     async handleCorrection(editor: Editor) {
         const selection = editor.getSelection();
         if (!selection) {
-            new Notice("Veuillez sélectionner du texte à corriger.");
+            new Notice(t('NOTICE_SELECT_TEXT'));
             return;
         }
 
-        new Notice("Correction en cours...");
+        new Notice(t('NOTICE_CORRECTING'));
         try {
             const corrected = await this.llmProvider.correctText(selection, this.settings.spellCorrectionPrompt);
             editor.replaceSelection(corrected);
-            new Notice("Texte corrigé !");
+            new Notice(t('NOTICE_CORRECTED'));
         } catch (error) {
-            new Notice("Erreur lors de la correction : " + error.message);
+            new Notice(t('NOTICE_ERROR_CORRECTION') + error.message);
         }
     }
 
@@ -169,13 +170,13 @@ export default class OllamaTaggerPlugin extends Plugin {
             view = this.app.workspace.getActiveViewOfType(MarkdownView);
         }
         if (!view) {
-            new Notice('No active Markdown view');
+            new Notice(t('NOTICE_NO_VIEW'));
             return;
         }
 
         const content = view.getViewData();
 
-        new Notice('Generating tag suggestions...');
+        new Notice(t('NOTICE_GENERATING_TAGS'));
 
         try {
             // Define extended interface for internal API
@@ -191,18 +192,18 @@ export default class OllamaTaggerPlugin extends Plugin {
             }).open();
         } catch (error) {
             const err = error as Error;
-            new Notice('Error generating tags: ' + err.message);
+            new Notice(t('NOTICE_ERROR_TAGS') + err.message);
         }
     }
 
     async generateMeetingMinutes(editor: Editor, view: MarkdownView) {
         if (!view) {
-            new Notice('No active Markdown view');
+            new Notice(t('NOTICE_NO_VIEW'));
             return;
         }
 
         const content = view.getViewData();
-        new Notice(`Generating meeting minutes...`);
+        new Notice(t('NOTICE_GENERATING_MINUTES'));
 
         try {
             const summary = await this.llmProvider.generateSummary(content, this.settings.meetingMinutesPrompt);
@@ -211,11 +212,11 @@ export default class OllamaTaggerPlugin extends Plugin {
                     this.handleAddToNote(view, summary);
                 }).open();
             } else {
-                new Notice("Failed to generate summary.");
+                new Notice(t('NOTICE_FAILED_SUMMARY'));
             }
         } catch (error) {
             const err = error as Error;
-            new Notice('Error generating summary: ' + err.message);
+            new Notice(t('NOTICE_ERROR_SUMMARY') + err.message);
         }
     }
 
@@ -223,7 +224,7 @@ export default class OllamaTaggerPlugin extends Plugin {
         const currentContent = view.getViewData();
         const newContent = insertMeetingMinutes(currentContent, summary);
         view.setViewData(newContent, false);
-        new Notice("Meeting minutes added to note!");
+        new Notice(t('NOTICE_MINUTES_ADDED'));
     }
 
     async addTagsToNote(view: MarkdownView, tags: string[]) {
@@ -269,11 +270,11 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
 
         containerEl.empty();
 
-        new Setting(containerEl).setName('Connection').setHeading();
+        new Setting(containerEl).setName(t('SETTING_CONNECTION_HEADING')).setHeading();
 
         new Setting(containerEl)
-            .setName('Server URL')
-            .setDesc('Address of the local Ollama server')
+            .setName(t('SETTING_SERVER_URL'))
+            .setDesc(t('SETTING_SERVER_URL_DESC'))
             .addText(text => text
                 .setPlaceholder('Example: http://localhost:11434')
                 .setValue(this.plugin.settings.ollamaUrl)
@@ -285,11 +286,11 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
 
         // Better approach for Async Dropdown in Obsidian Settings:
         const modelSetting = new Setting(containerEl)
-            .setName('Model name')
-            .setDesc('Select the model to use.');
+            .setName(t('SETTING_MODEL_NAME'))
+            .setDesc(t('SETTING_MODEL_DESC'));
 
         modelSetting.addDropdown(dropdown => {
-            dropdown.addOption('', 'Loading models...');
+            dropdown.addOption('', t('DROPDOWN_LOADING'));
             dropdown.setValue('');
         });
 
@@ -311,7 +312,7 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
             modelSetting.clear();
             modelSetting.addDropdown(dropdown => {
                 if (models.length === 0) {
-                    dropdown.addOption('', 'No models found (check URL)');
+                    dropdown.addOption('', t('DROPDOWN_NO_MODELS'));
                     if (this.plugin.settings.modelName) {
                         dropdown.addOption(this.plugin.settings.modelName, this.plugin.settings.modelName + ' (current)');
                         dropdown.setValue(this.plugin.settings.modelName);
@@ -342,11 +343,11 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
 
         const detailsEl = containerEl.createEl('details');
         detailsEl.addClass('fine-tuning-details');
-        detailsEl.createEl('summary', { text: 'Fine tuning' });
+        detailsEl.createEl('summary', { text: t('SETTING_FINE_TUNING') });
 
         new Setting(detailsEl)
-            .setName('Creativity')
-            .setDesc('Adjust how creative or precise the model should be (temperature). Lower values are more deterministic, higher values are more creative.')
+            .setName(t('SETTING_CREATIVITY'))
+            .setDesc(t('SETTING_CREATIVITY_DESC'))
             .addSlider(slider => slider
                 .setLimits(0, 1, 0.1)
                 .setValue(this.plugin.settings.creativity)
@@ -358,10 +359,10 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(detailsEl)
-            .setName('Tag suggestion prompt')
-            .setDesc('Custom system prompt for tag generation. Leave empty to use default.')
+            .setName(t('SETTING_TAG_PROMPT'))
+            .setDesc(t('SETTING_TAG_PROMPT_DESC'))
             .addTextArea(text => text
-                .setPlaceholder('Default prompt will be used if empty...')
+                .setPlaceholder(t('SETTING_PROMPT_PLACEHOLDER'))
                 .setValue(this.plugin.settings.tagSuggestionPrompt)
                 .onChange(async (value) => {
                     this.plugin.settings.tagSuggestionPrompt = value;
@@ -369,10 +370,10 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(detailsEl)
-            .setName('Spell correction prompt')
-            .setDesc('Custom system prompt for text correction. Leave empty to use default.')
+            .setName(t('SETTING_SPELL_PROMPT'))
+            .setDesc(t('SETTING_SPELL_PROMPT_DESC'))
             .addTextArea(text => text
-                .setPlaceholder('Default prompt will be used if empty...')
+                .setPlaceholder(t('SETTING_PROMPT_PLACEHOLDER'))
                 .setValue(this.plugin.settings.spellCorrectionPrompt)
                 .onChange(async (value) => {
                     this.plugin.settings.spellCorrectionPrompt = value;
@@ -380,10 +381,10 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(detailsEl)
-            .setName('Meeting minutes prompt')
-            .setDesc('Custom system prompt for meeting minutes generation.')
+            .setName(t('SETTING_MINUTES_PROMPT'))
+            .setDesc(t('SETTING_MINUTES_PROMPT_DESC'))
             .addTextArea(text => text
-                .setPlaceholder('Default prompt will be used if empty...')
+                .setPlaceholder(t('SETTING_PROMPT_PLACEHOLDER'))
                 .setValue(this.plugin.settings.meetingMinutesPrompt)
                 .onChange(async (value) => {
                     this.plugin.settings.meetingMinutesPrompt = value;
