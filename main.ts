@@ -276,7 +276,7 @@ class OllamaTaggerSettingTab extends PluginSettingTab {
             .setName(t('SETTING_SERVER_URL'))
             .setDesc(t('SETTING_SERVER_URL_DESC'))
             .addText(text => text
-                .setPlaceholder('Example: http://localhost:11434')
+                .setPlaceholder('http://localhost:11434')
                 .setValue(this.plugin.settings.ollamaUrl)
                 .onChange(async (value) => {
                     this.plugin.settings.ollamaUrl = value;
