@@ -39,7 +39,7 @@ export default {
     // Settings
     "SETTING_CONNECTION_HEADING": "Connection",
     "SETTING_SERVER_URL": "Server URL",
-    "SETTING_SERVER_URL_DESC": "Enter the address of your local Ollama server",
+    "SETTING_SERVER_URL_DESC": "Enter the address of your local ollama server",
     "SETTING_MODEL_NAME": "Model name",
     "SETTING_MODEL_DESC": "Select the model to use.",
     "SETTING_FINE_TUNING": "Fine tuning",
